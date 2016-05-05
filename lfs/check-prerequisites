@@ -1,0 +1,60 @@
+#!/bin/bash
+# Simple script to list version numbers of critical development tools
+
+LC_ALL=C
+
+header() {
+    printf "##\n## %s \n##\n" "$@"
+}
+
+is_tool_found() {
+    which $1 > /dev/null 2> /dev/null
+    return $?
+}
+
+is_lib_found() {
+    whereis $1 > /dev/null 2> /dev/null
+    return $?
+}
+
+check_version() {
+    if is_tool_found $1; 
+    then printf "[ OK] %-12s: %-50s \n" $1 "$($1 --version | head -n1)"
+    else printf "[ERR] %-12s is missing \n" $1
+    fi
+}
+
+###############################################################################
+check_general() { 
+    header "general tools"
+    cmds="bash ld bison yacc chown diff find gawk awk "
+    cmds+="gcc g++ ldd grep gzip m4 make patch sed tar makeinfo xz "
+    for i in $cmds; do
+        check_version $i
+    done
+}
+
+check_libs() {
+    header "check libs"
+    for i in lib{gmp,mpfr,mpc}.so; do
+        if is_lib_found $i; 
+        then printf "[ OK] %-12s: found \n" $i
+        else printf "[ERR] %-12s: is missing\n" $i
+        fi
+    done
+}
+
+check_compilation() {
+    header "compilation test"
+    echo 'int main(){}' > dummy.c && g++ -o dummy dummy.c
+    if [ -x dummy ]; 
+    then printf "g++ compilation OK \n"
+    else printf "g++ compilation failed \n"
+    fi
+    rm -f dummy.c dummy
+}
+
+###############################################################################
+check_general
+check_libs
+check_compilation
