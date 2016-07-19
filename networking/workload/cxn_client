@@ -1,0 +1,37 @@
+#!/bin/sh
+# Starts a number of clients to establish the specified total connection
+# to the remote servers.
+
+set -x
+set -u
+trap 'pkill -P $$' EXIT INT TERM  # kill children when done
+
+SERVER_IP=$1
+SERVER_PORT=$2  # starting port for servers
+NUM_CXNS=$3 # total number of connections
+CXNS_PER_SERVER=$4  # max number of connections to establish to each server
+
+function start_client
+{
+    socket_client.py -a ${SERVER_IP} -p ${SERVER_PORT} -t ${CXNS_PER_SERVER} &
+}
+
+# how many servers will be fully loaded
+NUM_FULL_CXN=$((NUM_CXNS / CXNS_PER_SERVER))
+
+for ((i=0; i<${NUM_FULL_CXN}; i++))
+do 
+    start_client
+    (( SERVER_PORT = SERVER_PORT + 1 ))
+done
+
+# Process left-over
+CXNS_PER_SERVER=$((NUM_CXNS % CXNS_PER_SERVER))
+if [[ ${CXNS_PER_SERVER} != 0 ]]
+then
+    start_client
+fi
+wait
+
+#manual
+#kill -9 `ps ax | grep socket_server | grep -v grep | awk '{print $1}'`

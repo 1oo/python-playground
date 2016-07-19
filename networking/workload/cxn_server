@@ -1,0 +1,18 @@
+#/bin/bash
+
+trap 'pkill -P $$' EXIT INT TERM
+set -u
+
+PORT=$1 # starting port
+NUM_SERVERS=$2
+for((i=0; i<${NUM_SERVERS}; i++))
+do
+     socket_server.py -p ${PORT} &
+     PORT=$((PORT + 1))
+done
+wait
+echo $(date) $0 done
+
+# manual kill
+# kill -9 `ps ax | grep socket_server | grep -v grep | awk '{print $1}'`
+
